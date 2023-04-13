@@ -1,0 +1,79 @@
+---
+title: "CaseStudy2Shinny"
+author: "Matthew David"
+date: "2023-04-13"
+output: html_document
+---
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(tidyverse)
+
+#load in frito dataset 
+fritorshiny <- read.csv("CaseStudy2-data.csv")
+fritorshiny <- as.data.frame(fritorshiny)
+
+ui <- fluidPage(
+  titlePanel("Case Study 2: DDS"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(inputId = "jobRole",
+                  label = "Choose a job role:",
+                  choices = c("All", unique(fritorshiny$JobRole))),
+    ),
+    mainPanel(
+      plotOutput(outputId = "boxplot"),
+      plotOutput(outputId = "barplot")
+    )
+  ),
+  tabsetPanel(
+    tabPanel("Years at Company and Attrition",
+             plotOutput(outputId = "years_att_barplot")
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  # Filter data based on selected job role
+  filteredData <- reactive({
+    if (input$jobRole == "All") {
+      fritorshiny
+    } else {
+      fritorshiny %>% filter(JobRole == input$jobRole)
+    }
+  })
+  
+  # Render boxplot
+  output$boxplot <- renderPlot({
+    ggplot(filteredData(), aes(x = JobRole, y = MonthlyIncome,fill= JobRole)) +
+      geom_boxplot() +
+      theme(legend.position = "none")+
+      labs(x = "Job Role", y = "Monthly Income") +
+      ggtitle("Monthly Income by Job Role")
+  })
+  
+  # Render barplot
+  output$barplot <- renderPlot({
+    ggplot(filteredData(), aes(x = JobLevel, y = MonthlyIncome,fill=JobLevel)) +
+      geom_bar(stat = "summary", fun = "mean") +
+      theme(legend.position = "none")+
+      labs(x = "Job Level", y = "Monthly Income") +
+      ggtitle("Monthly Income by Job Level")
+  })
+  
+  # Render bar chart for years at company and attrition
+  output$years_att_barplot <- renderPlot({
+    ggplot(fritorshiny, aes(x = YearsAtCompany, fill = Attrition)) +
+      geom_bar() +
+      labs(x = "Years at Company", y = "Count", fill = "Attrition") +
+      ggtitle("Attrition by Years at Company") +
+      theme(legend.position = "bottom")
+  })
+}
+
+# Run the app
+shinyApp(ui = ui, server = server)
+
+```
